@@ -53,6 +53,19 @@ const Chat = () => {
     }
   };
 
+  const handleFileUpload = (e) => {
+    console.log(e.target.files);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    console.log(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
   return (
     <>
       <div className="w-full space-y-8">
@@ -72,16 +85,32 @@ const Chat = () => {
           </div>
         ))}
       </div>
-      <div className="p-4 bg-secondary text-primary w-11/12 mx-auto rounded-2xl flex">
-        <textarea
-          className="w-full h-24 resize-none"
-          placeholder="Type your message here..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeypress}
-        ></textarea>
+      <div
+        className="flex flex-row justify-around h-1/4"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
+        <div className="w-11/12 flex flex-col">
+          <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
+            <input
+              type="file"
+              accept=".txt, .json"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            +
+          </label>
+
+          <textarea
+            className="w-full h-2/3 resize-none p-4 bg-secondary text-primary rounded-2xl"
+            placeholder="Type your message here..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeypress}
+          ></textarea>
+        </div>
         <button
-          className="bg-accent text-primary py-2 px-4 rounded h-12 my-auto mx-2"
+          className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
           onClick={handleSendMessage}
         >
           Send
