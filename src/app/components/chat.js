@@ -54,7 +54,61 @@ const Chat = () => {
   };
 
   const handleFileUpload = (e) => {
-    console.log(e.target.files);
+    // Safe check
+    if (e.target.files.length === 0) {
+      console.error('Error! No files provided.');
+    }
+
+    try {
+      // Since it only allows for one uploaded file
+      // take the first one
+      const file = e.target.files[0];
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = reader.result;
+        let text;
+
+        switch (file.type) {
+          case 'text/plain':
+            text = result;
+            break;
+          case 'application/json':
+            // Simply convert it to a string for now
+            try {
+              text = JSON.stringify(JSON.parse(result));
+            } catch (error) {
+              console.error(`Error! Invalid JSON format: ${error}`);
+            }
+            break;
+          default:
+            console.error(`Error! Unsupported file type: ${file.type}`);
+            break;
+        }
+
+        // Send the p
+        if (text) {
+          requestLLM(text)
+        } else {
+          console.error('Error! Text could not be parsed.');
+        }
+      };
+
+      reader.readAsText(file);
+
+    } catch (error) {
+      console.error(`Error! Could not process input file: ${error}`);
+    }
+  };
+
+  // Placeholder function to send a post request to the LLM
+  const requestLLM = async (text) => {
+    try {
+      console.log(`Sending POST request with content:\n${text}`);
+    } catch (error) {
+      console.error(`Error! Could not communicate with LLM: ${error}`);
+    }
   };
 
   const handleDrop = (e) => {
@@ -72,11 +126,10 @@ const Chat = () => {
         {messages.map((message, index) => (
           <div key={index}>
             <div
-              className={`flex text-left text-xl mx-8 ${
-                message.role === "bot"
+              className={`flex text-left text-xl mx-8 ${message.role === "bot"
                   ? "justify-start"
                   : "justify-end text-right"
-              }`}
+                }`}
             >
               {message.role === "bot" && <Bot color="black" size={36} />}
               <p className="my-auto mx-4">{message.message}</p>
