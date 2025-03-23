@@ -1,0 +1,27 @@
+Teenage Mutant Ninja Turtles: Shredder's Revenge
+Version: 1.0.0
+Platform: PC
+
+Bug Report:
+Title: Michelangelo Becomes Permanently Stuck in Cowabunga Mode
+Description: After activating the special 'Cowabunga' move, Michelangelo refuses to stop performing the move, even after the timer expires. He continues to perform endless spins, knocking out enemies, but also knocking himself off the screen in the process.
+
+Steps to Reproduce:
+1. Start the game and select Michelangelo.
+2. Use the 'Cowabunga' special move during a group fight.
+3. Wait for the timer to end but watch as Michelangelo keeps spinning.
+4. Observe Michelangelo fall off the screen repeatedly, causing game-breaking issues.
+
+Expected Result:
+Michelangelo should stop performing the Cowabunga move after the timer expires.
+
+Actual Result:
+Michelangelo continues spinning endlessly, causing him to fall off the screen and potentially freeze the game.
+
+Severity: Medium
+Reported by: MutantMaster
+Date Reported: 2025-03-23
+
+Comments:
+- At first, it was funny, but after 10 minutes of endless spinning, I couldn't play anymore.
+- It's a shame because Michelangelo is my favorite turtle, but this move is game-breaking!
