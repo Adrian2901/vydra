@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Bot, User } from "lucide-react";
+import { Bot, User, File, X, CirclePlus } from "lucide-react";
 
 const Chat = () => {
   // placeholder messages, remove later
@@ -20,8 +20,9 @@ const Chat = () => {
   };
 
   const [messages, setMessages] = useState([message1, message2, message3]);
+  const [file, setFile] = useState();
 
-  const addMessage = (message) => {
+  const sendMessage = (message) => {
     setMessages([...messages, { role: "user", message: message }]);
 
     // Add a placeholder bot response after 0.5s
@@ -39,12 +40,22 @@ const Chat = () => {
   };
 
   const [inputValue, setInputValue] = useState("");
+  const [fileContent, setFileContent] = useState("");
 
   const handleSendMessage = () => {
+    let msgString = ''
     if (inputValue.trim() !== "") {
-      addMessage(inputValue);
+      msgString += inputValue;
       setInputValue("");
     }
+
+    if (fileContent.trim() !== "") {
+      msgString += fileContent;
+      setFile();
+      setFileContent("");
+    }
+
+    sendMessage(msgString);
   };
 
   const handleKeypress = (e) => {
@@ -63,6 +74,9 @@ const Chat = () => {
       // Since it only allows for one uploaded file
       // take the first one
       const file = e.target.files[0];
+
+      // Hook
+      setFile(file);
 
       const reader = new FileReader();
 
@@ -87,10 +101,11 @@ const Chat = () => {
             break;
         }
 
-        // Send the p
+        // Hook
         if (text) {
-          requestLLM(text)
+          setFileContent(text);
         } else {
+          setFileContent("");
           console.error('Error! Text could not be parsed.');
         }
       };
@@ -99,15 +114,6 @@ const Chat = () => {
 
     } catch (error) {
       console.error(`Error! Could not process input file: ${error}`);
-    }
-  };
-
-  // Placeholder function to send a post request to the LLM
-  const requestLLM = async (text) => {
-    try {
-      console.log(`Sending POST request with content:\n${text}`);
-    } catch (error) {
-      console.error(`Error! Could not communicate with LLM: ${error}`);
     }
   };
 
@@ -127,8 +133,8 @@ const Chat = () => {
           <div key={index}>
             <div
               className={`flex text-left text-xl mx-8 ${message.role === "bot"
-                  ? "justify-start"
-                  : "justify-end text-right"
+                ? "justify-start"
+                : "justify-end text-right"
                 }`}
             >
               {message.role === "bot" && <Bot color="black" size={36} />}
@@ -144,15 +150,39 @@ const Chat = () => {
         onDragOver={handleDragOver}
       >
         <div className="w-11/12 flex flex-col">
-          <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
-            <input
-              type="file"
-              accept=".txt, .json"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            +
-          </label>
+          <div className="flex items-center">
+            <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
+              <input
+                type="file"
+                accept=".txt, .json"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <CirclePlus />
+            </label>
+
+            {
+              file &&
+              <div className="bg-accent text-primary text-sm mx-2 rounded-xl my-2 px-4 h-12 w-auto cursor-pointer flex items-center justify-center" onClick={() => {
+                setFile();
+                setFileContent("");
+              }}>
+                <div className="flex items-center">
+                  <File />
+                  <div className="flex flex-col ml-2 items-start">
+                    <p>{file.name}</p>
+                    <p>{
+                      Math.round((file.size / 1024) * 100) / 100
+                    } KB</p>
+                  </div>
+                </div>
+                <div className="relative ml-4">
+                  <X size={16} />
+                </div>
+              </div>
+            }
+
+          </div>
 
           <textarea
             className="w-full h-2/3 resize-none p-4 bg-secondary text-primary rounded-2xl"
