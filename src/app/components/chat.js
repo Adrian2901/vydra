@@ -5,38 +5,38 @@ import { Bot, User, File, X, CirclePlus } from "lucide-react";
 const Chat = () => {
   // placeholder messages, remove later
   const message1 = {
-    role: "bot",
-    message: "Hello! How can I help you today? ^^",
-  };
-  const message2 = {
-    role: "user",
-    message:
-      "Can you help me improve this bug report? I dont know to write good quality bug reports:(",
-  };
-  const message3 = {
-    role: "bot",
-    message:
-      "Certainly! I'd be happy to help you improve your bug report. Please provide the details of the bug report you have, and I'll assist you in refining it.",
+    role: "assistant",
+    content: "Hello! How can I help you today? ^^",
   };
 
-  const [messages, setMessages] = useState([message1, message2, message3]);
+  const [messages, setMessages] = useState([message1]);
   const [file, setFile] = useState();
 
-  const sendMessage = (message) => {
-    setMessages([...messages, { role: "user", message: message }]);
+  const sendMessage = async (message) => {
+    const newMessages = [...messages, { role: "user", content: message }];
+    setMessages(newMessages);
 
-    // Add a placeholder bot response after 0.5s
-    // This should be replaced with the llm call
-    setTimeout(() => {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "bot",
-          message:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
-      ]);
-    }, 500);
+    
+    const request = {
+      model: "llama3.2",
+      messages: newMessages,
+      stream: false
+    };
+
+    const response = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        role: "assistant",
+        content: data.message.content,
+      }
+    ]);
   };
 
   const [inputValue, setInputValue] = useState("");
@@ -132,13 +132,13 @@ const Chat = () => {
         {messages.map((message, index) => (
           <div key={index}>
             <div
-              className={`flex text-left text-xl mx-8 ${message.role === "bot"
+              className={`flex text-left text-xl mx-8 ${message.role === "assistant"
                 ? "justify-start"
                 : "justify-end text-right"
                 }`}
             >
-              {message.role === "bot" && <Bot color="black" size={36} />}
-              <p className="my-auto mx-4">{message.message}</p>
+              {message.role === "assistant" && <Bot color="black" size={36} />}
+              <p className="my-auto mx-4">{message.content}</p>
               {message.role === "user" && <User color="black" size={36} />}
             </div>
           </div>
