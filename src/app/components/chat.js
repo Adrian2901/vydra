@@ -28,12 +28,7 @@ const Chat = () => {
     "Hello! How can I help you today? ^^"
   );
 
-  const message2 = createMessage(
-    "assistant",
-    "# Kamen Rider\n\nKamen Rider is a Japanese *tokusatsu* franchise created by Shotaro Ishinomori. It features masked heroes who fight against evil organizations, often using motorcycles and unique transformation belts. The series has been a cultural phenomenon since its debut in 1971, inspiring numerous adaptations, movies, and spin-offs.\n\n## Key Elements\n- **Henshin (Transformation):** The iconic transformation sequence where the hero dons their Rider suit.\n- **Rider Kick:** A signature finishing move used to defeat enemies.\n- **Motorcycles:** A staple of the franchise, often customized for each Rider.\n\n## Popular Series\n- Kamen Rider Ichigo (1971)\n- Kamen Rider Kuuga (2000)\n- Kamen Rider Build (2017)\n- Kamen Rider Zero-One (2019)\n\nKamen Rider continues to captivate audiences with its blend of action, drama, and heroism."
-  );
-
-  const [messages, setMessages] = useState([message1, message2]);
+  const [messages, setMessages] = useState([message1]);
   const [file, setFile] = useState();
 
   const sendMessage = async (newMessageObjects) => {
