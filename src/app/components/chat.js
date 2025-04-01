@@ -39,7 +39,7 @@ const Chat = () => {
     console.log(newMessages);
 
     const request = {
-      model: "llama3.2:1b",
+      model: "llama3.2",
       messages: newMessages.map(({ role, content }) => ({ role, content })),
       stream: false,
       options: {
@@ -47,7 +47,7 @@ const Chat = () => {
       },
     };
 
-    const response = await fetch("http://83.254.164.134:11434/api/chat", {
+    const response = await fetch("http://localhost:11434/api/chat", {
       method: "POST",
       body: JSON.stringify(request),
     });
