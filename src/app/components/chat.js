@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { CirclePlus } from "lucide-react";
+import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
 
@@ -29,6 +29,7 @@ const Chat = () => {
   );
 
   const [messages, setMessages] = useState([message1]);
+  const [isThinking, setIsThinking] = useState(false);
   const [file, setFile] = useState();
   const [model, setModel] = useState("llama3.2");
   const availableModels = ["llama3.2", "llama3.2:1b", "llama3.1", "qwen2.5:72b", "qwen2.5:14b", "mistral-large", "phi4-mini"];
@@ -37,6 +38,9 @@ const Chat = () => {
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
     scrollChat();
+
+    // Enable the loading spinner
+    setIsThinking(true);
 
     const request = {
       model: model,
@@ -68,6 +72,7 @@ const Chat = () => {
       scrollChat();
       return updatedMessages;
     });
+    setIsThinking(false);
   };
 
   const [inputValue, setInputValue] = useState("");
@@ -110,6 +115,7 @@ const Chat = () => {
 
   const handleKeypress = (e) => {
     if (e.code === "Enter") {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -192,6 +198,12 @@ const Chat = () => {
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />
         ))}
+        {isThinking && (
+        <div className="flex mx-2">
+          <Bot color="black" size={36} />
+          <LoaderCircle className="animate-spin mx-4" color="black" size={36} />
+        </div>)
+        }
       </div>
       <div
         className="flex flex-row justify-around h-1/4 mb-2"
