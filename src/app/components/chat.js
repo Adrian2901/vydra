@@ -36,8 +36,7 @@ const Chat = () => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
-
-    console.log(newMessages);
+    scrollChat();
 
     const request = {
       model: model,
@@ -61,12 +60,14 @@ const Chat = () => {
 
     const data = await response.json();
 
-    setMessages((prevMessages) => [
+    setMessages((prevMessages) => {
+      const updatedMessages = [
       ...prevMessages,
       createMessage("assistant", data.message.content),
-    ]);
-
-    console.log(messages);
+      ];
+      scrollChat();
+      return updatedMessages;
+    });
   };
 
   const [inputValue, setInputValue] = useState("");
@@ -174,9 +175,20 @@ const Chat = () => {
     e.preventDefault();
   };
 
+  const scrollChat = () => {
+    setTimeout(() => {
+      const chatContainer = document.querySelector(
+        ".chatbox"
+      );
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+      }, 0);
+  }
+
   return (
     <>
-      <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[70vh]">
+      <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[64vh] [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-secondary [&::-webkit-scrollbar-thumb]:rounded-full chatbox">
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />
         ))}
