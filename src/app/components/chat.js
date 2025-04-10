@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
@@ -21,7 +21,8 @@ const createMessage = (role, content, type = "text", file = null) => ({
   file,
 });
 
-const Chat = () => {
+// Receive chat id as a prop
+const Chat = ({ chatId }) => {
   // placeholder messages, remove later
   const message1 = createMessage(
     "assistant",
@@ -30,9 +31,53 @@ const Chat = () => {
 
   const [messages, setMessages] = useState([message1]);
   const [isThinking, setIsThinking] = useState(false);
-  const [file, setFile] = useState();
+  const availableModels = [
+    "llama3.2",
+    "llama3.2:1b",
+    "llama3.1",
+    "qwen2.5:72b",
+    "qwen2.5:14b",
+    "mistral-large",
+    "phi4-mini",
+  ];
   const [model, setModel] = useState("llama3.2");
-  const availableModels = ["llama3.2", "llama3.2:1b", "llama3.1", "qwen2.5:72b", "qwen2.5:14b", "mistral-large", "phi4-mini"];
+  const [currentChatId, setCurrentChatId] = useState(chatId);
+  const [file, setFile] = useState();
+  const [inputValue, setInputValue] = useState("");
+  const [fileContent, setFileContent] = useState("");
+  const [isFirstMessaage, setIsFirstMessage] = useState(false);
+
+  useEffect(() => {
+    setCurrentChatId(chatId);
+    // Check if the chatId provided is stored in the sorted set in Redis
+    fetch(`/api/chatIds`)
+      .then((response) => response.json())
+      .then((data) => {
+        const chatIds = data || [];
+        // Check if chatId is in the list of chat IDs
+        if (chatIds.includes(chatId)) {
+          // Chat ID exists, fetch messages
+          fetch(`/api/chats?chatId=${chatId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              setMessages(data.messages || []);
+            })
+            .catch((error) => {
+              console.error("Error fetching chats:", error);
+              setMessages([]); // Fallback to empty array if there's an error
+            });
+        } else {
+          console.log("New chatId provided!");
+          // First chat
+          setIsFirstMessage(true);
+          setMessages([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chat IDs:", error);
+      });
+  }, [chatId, currentChatId]);
+
   const sendMessage = async (newMessageObjects) => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
@@ -57,33 +102,54 @@ const Chat = () => {
     });
 
     if (!response.ok) {
-      alert("Error: Could not fetch response from the LLM, please try again later!");
+      alert(
+        "Error: Could not fetch response from the LLM, please try again later!"
+      );
       console.log(response.statusText);
       return;
     }
 
     const data = await response.json();
 
+    const message = createMessage("assistant", data.message.content);
+
+    const response2 = await fetch("/api/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId: currentChatId, message }),
+    });
+
+    if (!response2.ok) {
+      throw new Error("Failed to save message to the database");
+    }
+
+    if (isFirstMessaage) {
+      console.log("First message sent! Saving chatId to the database...");
+      // Save the chatId to the database
+      await fetch("/api/chatIds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: currentChatId }),
+      });
+    }
+
     setMessages((prevMessages) => {
       const updatedMessages = [
-      ...prevMessages,
-      createMessage("assistant", data.message.content),
+        ...prevMessages,
+        createMessage("assistant", data.message.content),
       ];
       scrollChat();
       return updatedMessages;
     });
     setIsThinking(false);
+    setIsFirstMessage(false);
   };
 
-  const [inputValue, setInputValue] = useState("");
-  const [fileContent, setFileContent] = useState("");
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const newMessages = [];
 
     // Append the file if there is one
     if (fileContent.trim() !== "") {
-      // These naming conventions are so bad
       const fileObjectData = {
         name: file.name,
         size: file.size,
@@ -96,6 +162,7 @@ const Chat = () => {
         "file",
         fileObjectData
       );
+      // Append the file message
       newMessages.push(fileObject);
       setFile();
       setFileContent("");
@@ -105,11 +172,22 @@ const Chat = () => {
     if (inputValue.trim() !== "") {
       const messageObject = createMessage("user", inputValue);
       newMessages.push(messageObject);
+      console.log("Append user message:", JSON.stringify(messageObject));
       setInputValue("");
     }
 
     if (newMessages.length > 0) {
-      sendMessage(newMessages);
+      const messagesPromise = newMessages.map((message) =>
+        fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId: currentChatId, message }),
+        })
+      );
+
+      // Wait for all messages to be saved
+      await Promise.all(messagesPromise);
+      await sendMessage(newMessages);
     }
   };
 
@@ -183,14 +261,12 @@ const Chat = () => {
 
   const scrollChat = () => {
     setTimeout(() => {
-      const chatContainer = document.querySelector(
-        ".chatbox"
-      );
+      const chatContainer = document.querySelector(".chatbox");
       if (chatContainer) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
-      }, 0);
-  }
+    }, 0);
+  };
 
   return (
     <>
@@ -199,11 +275,15 @@ const Chat = () => {
           <ContentMessage message={message} key={index} />
         ))}
         {isThinking && (
-        <div className="flex mx-2">
-          <Bot color="black" size={36} />
-          <LoaderCircle className="animate-spin mx-4" color="black" size={36} />
-        </div>)
-        }
+          <div className="flex mx-2">
+            <Bot color="black" size={36} />
+            <LoaderCircle
+              className="animate-spin mx-4"
+              color="black"
+              size={36}
+            />
+          </div>
+        )}
       </div>
       <div
         className="flex flex-row justify-around h-1/4 mb-2"
@@ -236,20 +316,20 @@ const Chat = () => {
           </div>
           <div className="flex w-full space-x-4 h-2/3">
             <textarea
-            className="w-full resize-none p-4 bg-secondary text-primary rounded-2xl"
-            placeholder="Type your message here..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeypress}
-          ></textarea>
-          <button
-          className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
-          onClick={handleSendMessage}
-          >
-            Send
-          </button>
+              className="w-full resize-none p-4 bg-secondary text-primary rounded-2xl"
+              placeholder="Type your message here..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeypress}
+            ></textarea>
+            <button
+              className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
+              onClick={handleSendMessage}
+            >
+              Send
+            </button>
           </div>
-          
+
           <select
             className="rounded-xl py-2 w-32"
             value={model}
@@ -262,7 +342,6 @@ const Chat = () => {
             ))}
           </select>
         </div>
-        
       </div>
     </>
   );
