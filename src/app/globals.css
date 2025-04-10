@@ -4,8 +4,8 @@
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-primary: #F7DFBF;
-  --color-secondary: #5F5453;
+  --color-primary: #fbcbb5;
+  --color-secondary: #8e4c44;
   --color-accent: #1A191F;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { CirclePlus } from "lucide-react";
+import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
 
@@ -29,17 +29,21 @@ const Chat = () => {
   );
 
   const [messages, setMessages] = useState([message1]);
+  const [isThinking, setIsThinking] = useState(false);
   const [file, setFile] = useState();
-
+  const [model, setModel] = useState("llama3.2");
+  const availableModels = ["llama3.2", "llama3.2:1b", "llama3.1", "qwen2.5:72b", "qwen2.5:14b", "mistral-large", "phi4-mini"];
   const sendMessage = async (newMessageObjects) => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
+    scrollChat();
 
-    console.log(newMessages);
+    // Enable the loading spinner
+    setIsThinking(true);
 
     const request = {
-      model: "llama3.2",
+      model: model,
       messages: newMessages.map(({ role, content }) => ({ role, content })),
       stream: false,
       options: {
@@ -52,14 +56,23 @@ const Chat = () => {
       body: JSON.stringify(request),
     });
 
+    if (!response.ok) {
+      alert("Error: Could not fetch response from the LLM, please try again later!");
+      console.log(response.statusText);
+      return;
+    }
+
     const data = await response.json();
 
-    setMessages((prevMessages) => [
+    setMessages((prevMessages) => {
+      const updatedMessages = [
       ...prevMessages,
       createMessage("assistant", data.message.content),
-    ]);
-
-    console.log(messages);
+      ];
+      scrollChat();
+      return updatedMessages;
+    });
+    setIsThinking(false);
   };
 
   const [inputValue, setInputValue] = useState("");
@@ -102,6 +115,7 @@ const Chat = () => {
 
   const handleKeypress = (e) => {
     if (e.code === "Enter") {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -167,19 +181,36 @@ const Chat = () => {
     e.preventDefault();
   };
 
+  const scrollChat = () => {
+    setTimeout(() => {
+      const chatContainer = document.querySelector(
+        ".chatbox"
+      );
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+      }, 0);
+  }
+
   return (
     <>
-      <div className="flex-col w-full space-y-8">
+      <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[64vh] [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-secondary [&::-webkit-scrollbar-thumb]:rounded-full chatbox">
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />
         ))}
+        {isThinking && (
+        <div className="flex mx-2">
+          <Bot color="black" size={36} />
+          <LoaderCircle className="animate-spin mx-4" color="black" size={36} />
+        </div>)
+        }
       </div>
       <div
-        className="flex flex-row justify-around h-1/4"
+        className="flex flex-row justify-around h-1/4 mb-2"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
-        <div className="w-11/12 flex flex-col">
+        <div className="w-full flex flex-col px-6">
           <div className="flex items-center space-x-1">
             <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
               <input
@@ -203,21 +234,35 @@ const Chat = () => {
               </div>
             )}
           </div>
-
-          <textarea
-            className="w-full h-2/3 resize-none p-4 bg-secondary text-primary rounded-2xl"
+          <div className="flex w-full space-x-4 h-2/3">
+            <textarea
+            className="w-full resize-none p-4 bg-secondary text-primary rounded-2xl"
             placeholder="Type your message here..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeypress}
           ></textarea>
-        </div>
-        <button
+          <button
           className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
           onClick={handleSendMessage}
-        >
-          Send
-        </button>
+          >
+            Send
+          </button>
+          </div>
+          
+          <select
+            className="rounded-xl py-2 w-32"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
+            {availableModels.map((availableModel) => (
+              <option key={availableModel} value={availableModel}>
+                {availableModel}
+              </option>
+            ))}
+          </select>
+        </div>
+        
       </div>
     </>
   );
