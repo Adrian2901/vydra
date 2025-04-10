@@ -23,13 +23,7 @@ const createMessage = (role, content, type = "text", file = null) => ({
 
 // Receive chat id as a prop
 const Chat = ({ chatId }) => {
-  // placeholder messages, remove later
-  const message1 = createMessage(
-    "assistant",
-    "Hello! How can I help you today? ^^"
-  );
-
-  const [messages, setMessages] = useState([message1]);
+  const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const availableModels = [
     "llama3.2",
@@ -45,7 +39,6 @@ const Chat = ({ chatId }) => {
   const [file, setFile] = useState();
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
-  const [isFirstMessaage, setIsFirstMessage] = useState(false);
 
   useEffect(() => {
     setCurrentChatId(chatId);
@@ -67,10 +60,34 @@ const Chat = ({ chatId }) => {
               setMessages([]); // Fallback to empty array if there's an error
             });
         } else {
-          console.log("New chatId provided!");
           // First chat
-          setIsFirstMessage(true);
-          setMessages([]);
+          console.log("New chatId provided!");
+
+          // placeholder messages, remove later
+          const message = createMessage(
+            "assistant",
+            "Hello! How can I help you today? ^^"
+          );
+
+          setMessages([message]);
+          console.log("Current chatId:", currentChatId);
+          console.log("First message:", message);
+          // Save chatId and first message to the database
+          const saveChatData = async () => {
+            await fetch("/api/chatIds", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chatId: currentChatId }),
+            });
+
+            await fetch("/api/chats", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chatId: currentChatId, message }),
+            });
+          };
+
+          saveChatData();
         }
       })
       .catch((error) => {
@@ -110,6 +127,13 @@ const Chat = ({ chatId }) => {
     }
 
     const data = await response.json();
+    // Simulate a response for now
+    // const data = {
+    //   message: {
+    //     content: "This is a simulated response from the LLM.",
+    //     role: "assistant",
+    //   },
+    // };
 
     const message = createMessage("assistant", data.message.content);
 
@@ -123,16 +147,6 @@ const Chat = ({ chatId }) => {
       throw new Error("Failed to save message to the database");
     }
 
-    if (isFirstMessaage) {
-      console.log("First message sent! Saving chatId to the database...");
-      // Save the chatId to the database
-      await fetch("/api/chatIds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatId: currentChatId }),
-      });
-    }
-
     setMessages((prevMessages) => {
       const updatedMessages = [
         ...prevMessages,
@@ -142,7 +156,6 @@ const Chat = ({ chatId }) => {
       return updatedMessages;
     });
     setIsThinking(false);
-    setIsFirstMessage(false);
   };
 
   const handleSendMessage = async () => {

@@ -30,7 +30,7 @@ export default function Home() {
       if (ids.length > 0) {
         setCurrentChatId(ids[0]); // Set the first chat ID as the default
       } else {
-        setCurrentChatId(null); // No chats available
+        setCurrentChatId(new Date().getTime()); // No chats available
       }
     });
   }, []);
