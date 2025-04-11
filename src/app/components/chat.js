@@ -3,13 +3,27 @@ import React, { useState } from "react";
 import { Bot, User, File, X, CirclePlus } from "lucide-react";
 
 const Chat = () => {
-  // placeholder messages, remove later
+  const system_message = {
+    role: "system",
+    content: `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. You should provide assistance
+    in improving the following parts of the bug report:
+    - Steps to Reproduce
+    - Stack Traces
+    - Test Cases
+    - Observed Behavior
+    - Expected Behavior
+
+    Overall, check if the grammar, formatting, and clarity of the text is correct. Suggest improvements otherwise.
+    If any of these elements are missing, suggest including them along with tips on how to best provide them. 
+    `
+  };
+
   const message1 = {
     role: "assistant",
     content: "Hello! How can I help you today? ^^",
   };
 
-  const [messages, setMessages] = useState([message1]);
+  const [messages, setMessages] = useState([system_message, message1]);
   const [file, setFile] = useState();
 
   const sendMessage = async (message) => {

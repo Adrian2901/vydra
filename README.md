@@ -92,7 +92,6 @@
     - finding the root cause is more important than solving the superficial consequences of a bug
     - determining what internal team should solve the bug as its related to the root cause. the root cause could be related to an entirely
         different part of the code than the symptom described in the bug report
-    - 
 
 # What can Vydra potentially help with?
 
