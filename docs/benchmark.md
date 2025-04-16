@@ -1,11 +1,13 @@
 # Benchmark for a good bug report
 
 ## Things that increase the quality of a bug report
-    - The number of elements given
-    - The presence of most useful elements (over 50% importance according to study done by Bettenburg et al.)
+    - The presence of most useful elements (over 20% importance according to study done by Bettenburg et al.)
         - steps to reproduce (83%)
         - stack traces (57%)
         - test cases (51%)
+        - observed behavior (33%)
+        - screenshots (26%)
+        - expected behavior (22%)
 
 ## Things that decrease the quality of a bug report
     - Missing information
