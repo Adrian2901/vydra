@@ -2,7 +2,7 @@ services:
   vydra:
     build: .
     ports:
-      - "8000:8000"
+      - "8000:3000"
     environment:
       - REDIS_URL=redis://redis:6379
   redis:
