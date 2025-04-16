@@ -24,8 +24,10 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 To run the app with Docker, you can use the following command:
 
 ```bash
-docker compose up # I think
+docker compose up --build
 ```
+
+Then open http://localhost:8000 in your browser
 
 ## Learn More
 
