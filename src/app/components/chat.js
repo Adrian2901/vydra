@@ -24,16 +24,16 @@ const createMessage = (role, content, type = "text", file = null) => ({
 const Chat = () => {
   const system_message = createMessage(
     "system",
-    `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. You should provide assistance
-    in improving the following parts of the bug report:
-    - Steps to Reproduce
-    - Stack Traces
-    - Test Cases
-    - Observed Behavior
-    - Expected Behavior
+    `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. Check if the following parts exist in the bug report:
+    - Steps to Reproduce: how the bug was found and the actions needed to recreate that process,
+    - Stack Traces: report of the stack frames at the time of the bug,
+    - Test Cases: methods to test the component where the bug is occuring,
+    - Observed Behavior: what the user sees when the bug is happening (in text or images),
+    - Expected Behavior: what the application should be doing
 
-    Overall, check if the grammar, formatting, and clarity of the text is correct. Suggest improvements otherwise.
-    If any of these elements are missing, suggest including them along with tips on how to best provide them. 
+If they do not exist, tell the user they need to provide them. Check if the grammar and formatting of the text is correct.
+If it is not correct, tell the user to fix it and how to fix it.
+Do not summarize the bug report and do not offer solutions to fixing the bug.
     `
   );
 
