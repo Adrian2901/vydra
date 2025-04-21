@@ -1,0 +1,13 @@
+User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0
+
+Steps to reproduce:
+
+Started Firefox in Safe Mode with Facebook in a pinned tab. Proceeded to use it for chatting and scrolling the home feed off-and-on for a few hours.
+
+Actual results:
+
+The tab became sluggish and borderline unusable, and in about:performance I can see that the tab has crept up to over a gig's worth of memory, with the next highest tab being 120MB.
+
+Expected results:
+
+Within a few hours worth of usage, it shouldn't be necessary to manually run "Minimize memory usage" over in about:memory?verbose or kill the thread associated with the Facebook tab through task manager. Unfortunately it currently requires me to do this multiple times a day.

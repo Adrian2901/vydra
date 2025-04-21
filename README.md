@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# What makes a good quality bug report?
 
-## Getting Started
+## *What makes a good bug report?* (Bettenburg et al.)
+- https://dl.acm.org/doi/pdf/10.1145/1453101.1453146
 
-First, run the development server:
+- surveyed both developers and bug reporters from Apache, Eclipse, Mozilla repositories
+- developers
+    - **most used parts of a bug reports**
+        - steps to reproduce
+        - observed and expected behavior
+        - stack traces
+        - test cases
+    - **rarely used**
+        - hardware
+        - severity
+    - **rated as most important (in descending order)**
+        - steps to reproduce (83%)
+        - stack traces (57%)
+        - test cases (51%)
+        - observed behavior (33%)
+        - screenshots (26%)
+        - expected behavior (22%)
+        - code examples (14%)
+        - summary (13%)
+        - error reports (12%)
+        - version (12%)
+        - build information (8%)
+        - product (5%)
+        - operating system (4%)
+        - component (3%)
+        - hardware (0%)
+        - severity (0%)
+    - **top 10 problems encountered in bug reports (no particular order)**
+        - incomplete information
+        - steps to reproduce
+        - duplicates
+        - bad grammar
+        - unstructured text
+        - expected behavior
+        - version number
+        - observed behavior
+        - component name
+        - too long text
+    - **additional comments**
+        - different knowledge levels between bug reporters
+        - rude/sarcastic bug reports are less likely to be solved
+        - complicated steps to reproduce
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- reporters
+    - **most commonly given**
+        - steps to reproduce
+        - observed behavior
+        - expected behvior
+        - "mandatory fields" (product, component, version, operating system, summary)
+    - **most difficult to give**
+        - test cases (75%)
+        - steps to reproduce (51%)
+        - code examples (43%)
+        - stack traces (24%)
+        - component (22%)
+        - screenshots (8%)
+        - rest are under 5%
+    - **what they think is most relevant to a developer**
+        - steps to reproduce (78%)
+        - test cases (43%)
+        - observed behavior (33%)
+        - stack traces (33%)
+        - expected behavior (22%)
+        - version (12%)
+        - code examples (9%)
+        - error reports (9%)
+        - build info (8%)
+        - product (7%)
+        - summary (6%)
+        - screenshots (5%)
+        - component (4%)
+        - operating system (4%)
+        - severity (2%)
+        - hardware (0%)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## *Modeling Bug Report Quality* (Hooimeijer and Weimer)
+- https://dl.acm.org/doi/abs/10.1145/1321631.1321639
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- having attachments from the beginning lead to a longer solving time
+- i didn't really understand all the statistics of this :(
 
-## Learn More
+## *“Not My Bug!” and Other Reasons for Software Bug Report Reassignments* (Guo et al.)
+- https://dl.acm.org/doi/abs/10.1145/1958824.1958887
 
-To learn more about Next.js, take a look at the following resources:
+- causes of bug reassignments
+    - finding the root cause is more important than solving the superficial consequences of a bug
+    - determining what internal team should solve the bug as its related to the root cause. the root cause could be related to an entirely
+        different part of the code than the symptom described in the bug report
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# What can Vydra potentially help with?
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# System prompt(s)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# References
