@@ -42,7 +42,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     "Hello! How can I help you today? ^^"
   );
 
-  const [messages, setMessages] = useState([message1]);
+  const [messages, setMessages] = useState([system_message, message1]);
   const [isThinking, setIsThinking] = useState(false);
   const [file, setFile] = useState();
   const [model, setModel] = useState("llama3.2");
