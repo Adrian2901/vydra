@@ -15,7 +15,6 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const { chatId } = await req.json();
-    console.log("Chat ID: ", chatId);
     // Add the chat ID to the sorted set with the current id (timestamp) as the score
     await redis.zadd("chatIds", chatId, chatId);
     return new Response(JSON.stringify({ message: "Chat saved" }), {

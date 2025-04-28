@@ -22,7 +22,7 @@ const createMessage = (role, content, type = "text", file = null) => ({
 });
 
 // Receive chat id as a prop
-const Chat = ({ chatId }) => {
+const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const availableModels = [
@@ -35,13 +35,13 @@ const Chat = ({ chatId }) => {
     "phi4-mini",
   ];
   const [model, setModel] = useState("llama3.2");
-  const [currentChatId, setCurrentChatId] = useState(chatId);
   const [file, setFile] = useState();
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
 
   useEffect(() => {
     setCurrentChatId(chatId);
+    console.log("TRIGGERED useEffect with chatId:", chatId);
     // Check if the chatId provided is stored in the sorted set in Redis
     fetch(`/api/chatIds`)
       .then((response) => response.json())
@@ -49,10 +49,12 @@ const Chat = ({ chatId }) => {
         const chatIds = data || [];
         // Check if chatId is in the list of chat IDs
         if (chatIds.includes(chatId)) {
+          console.log("FUCKING CHAT ID EXISTS:", chatId);
           // Chat ID exists, fetch messages
           fetch(`/api/chats?chatId=${chatId}`)
             .then((response) => response.json())
             .then((data) => {
+              console.log("FETCHED MESSAGES:", data);
               setMessages(data.messages || []);
             })
             .catch((error) => {
@@ -60,8 +62,7 @@ const Chat = ({ chatId }) => {
               setMessages([]); // Fallback to empty array if there's an error
             });
         } else {
-          // First chat
-          console.log("New chatId provided!");
+          // New chat
 
           // placeholder messages, remove later
           const message = createMessage(
@@ -70,36 +71,45 @@ const Chat = ({ chatId }) => {
           );
 
           setMessages([message]);
-          console.log("Current chatId:", currentChatId);
-          console.log("First message:", message);
-          // Save chatId and first message to the database
-          const saveChatData = async () => {
-            await fetch("/api/chatIds", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chatId: currentChatId }),
-            });
-
-            await fetch("/api/chats", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chatId: currentChatId, message }),
-            });
-          };
-
-          saveChatData();
         }
       })
       .catch((error) => {
         console.error("Error fetching chat IDs:", error);
       });
-  }, [chatId, currentChatId]);
+  }, [chatId, refreshChatIds, setCurrentChatId]);
 
   const sendMessage = async (newMessageObjects) => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
     scrollChat();
+
+    // If it's the first chat, create a new chatId
+    let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
+    let shouldRefresh = false;
+    if (chatId === "null") {
+      shouldRefresh = true;
+      // If it's the first chat, set the chatId to the new one
+      setCurrentChatId(thisChatId);
+      // Save the new chatId to the database
+      console.log("New chatId provided!");
+      console.log("ChatId:", thisChatId);
+      await fetch("/api/chatIds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: thisChatId }),
+      });
+
+      // Save the old messages to the database
+      newMessages.forEach(async (message) => {
+        console.log("Saving message:", message);
+        await fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId: thisChatId, message }),
+        });
+      });
+    }
 
     // Enable the loading spinner
     setIsThinking(true);
@@ -113,8 +123,10 @@ const Chat = ({ chatId }) => {
       },
     };
 
-    const response = await fetch("http://localhost:11434/api/chat", {
+    // Send the request to the LLM API
+    const response = await fetch("/api/llm", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
 
@@ -127,20 +139,13 @@ const Chat = ({ chatId }) => {
     }
 
     const data = await response.json();
-    // Simulate a response for now
-    // const data = {
-    //   message: {
-    //     content: "This is a simulated response from the LLM.",
-    //     role: "assistant",
-    //   },
-    // };
 
     const message = createMessage("assistant", data.message.content);
-
+    // Save the new message to the database
     const response2 = await fetch("/api/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chatId: currentChatId, message }),
+      body: JSON.stringify({ chatId: thisChatId, message }),
     });
 
     if (!response2.ok) {
@@ -156,6 +161,9 @@ const Chat = ({ chatId }) => {
       return updatedMessages;
     });
     setIsThinking(false);
+    if (shouldRefresh) {
+      refreshChatIds(thisChatId);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -194,7 +202,7 @@ const Chat = ({ chatId }) => {
         fetch("/api/chats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId: currentChatId, message }),
+          body: JSON.stringify({ chatId: chatId, message }),
         })
       );
 
@@ -283,6 +291,7 @@ const Chat = ({ chatId }) => {
 
   return (
     <>
+      {/* <div>DEBUG: {chatId}</div> */}
       <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[64vh] [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-secondary [&::-webkit-scrollbar-thumb]:rounded-full chatbox">
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />

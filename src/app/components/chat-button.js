@@ -9,15 +9,15 @@ const ChatButton = ({ chatId, onClick }) => {
 
   // Placeholder functions
   const handleRenameChat = () => {
-    console.log("Rename chat clicked");
+    // console.log("Rename chat clicked");
   };
 
   const handleExportChat = () => {
-    console.log("Export chat clicked");
+    // console.log("Export chat clicked");
   };
 
   const handleDeleteChat = () => {
-    console.log("Delete chat clicked");
+    // console.log("Delete chat clicked");
     fetch(`/api/chats`, {
       method: "DELETE",
       headers: {
