@@ -23,7 +23,27 @@ const createMessage = (role, content, type = "text", file = null) => ({
 
 // Receive chat id as a prop
 const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
-  const [messages, setMessages] = useState([]);
+  const system_message = createMessage(
+    "system",
+    `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. Check if the following parts exist in the bug report:
+    - Steps to Reproduce: how the bug was found and the actions needed to recreate that process,
+    - Stack Traces: report of the stack frames at the time of the bug,
+    - Test Cases: methods to test the component where the bug is occuring,
+    - Observed Behavior: what the user sees when the bug is happening (in text or images),
+    - Expected Behavior: what the application should be doing
+
+If they do not exist, tell the user they need to provide them. Check if the grammar and formatting of the text is correct.
+If it is not correct, tell the user to fix it and how to fix it.
+Do not summarize the bug report and do not offer solutions to fixing the bug.
+    `
+  );
+
+  const message1 = createMessage(
+    "assistant",
+    "Hello! How can I help you today? ^^"
+  );
+
+  const [messages, setMessages] = useState([system_message, message1]);
   const [isThinking, setIsThinking] = useState(false);
   const availableModels = [
     "llama3.2",

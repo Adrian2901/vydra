@@ -14,6 +14,9 @@ const ContentMessage = ({ message }) => {
 
   let classAttributes = "flex text-xl mx-2 items-center";
 
+  if (msgRole === "system") {
+    classAttributes = "hidden";
+  }
   // If we render a user message
   if (msgRole === "user") {
     classAttributes += " flex-row-reverse text-right";
