@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
+import { Bot, Github, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
+import { Octokit } from "octokit";
 
 /**
  * Creates a message object with the specified role, content, and type.
@@ -21,6 +22,10 @@ const createMessage = (role, content, type = "text", file = null) => ({
   file,
 });
 
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN,
+});
+
 const Chat = () => {
   const system_message = createMessage(
     "system",
@@ -34,19 +39,29 @@ const Chat = () => {
 If they do not exist, tell the user they need to provide them. Check if the grammar and formatting of the text is correct.
 If it is not correct, tell the user to fix it and how to fix it.
 Do not summarize the bug report and do not offer solutions to fixing the bug.
-    `
+    `,
   );
 
   const message1 = createMessage(
     "assistant",
-    "Hello! How can I help you today? ^^"
+    "Hello! How can I help you today? ^^",
   );
 
   const [messages, setMessages] = useState([system_message, message1]);
   const [isThinking, setIsThinking] = useState(false);
   const [file, setFile] = useState();
   const [model, setModel] = useState("llama3.2");
-  const availableModels = ["llama3.2", "llama3.2:1b", "llama3.1", "qwen2.5:72b", "qwen2.5:14b", "mistral-large", "phi4-mini"];
+  const [issues, setIssues] = useState([]);
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const availableModels = [
+    "llama3.2",
+    "llama3.2:1b",
+    "llama3.1",
+    "qwen2.5:72b",
+    "qwen2.5:14b",
+    "mistral-large",
+    "phi4-mini",
+  ];
   const sendMessage = async (newMessageObjects) => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
@@ -71,7 +86,9 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     });
 
     if (!response.ok) {
-      alert("Error: Could not fetch response from the LLM, please try again later!");
+      alert(
+        "Error: Could not fetch response from the LLM, please try again later!",
+      );
       console.log(response.statusText);
       return;
     }
@@ -80,8 +97,8 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
     setMessages((prevMessages) => {
       const updatedMessages = [
-      ...prevMessages,
-      createMessage("assistant", data.message.content),
+        ...prevMessages,
+        createMessage("assistant", data.message.content),
       ];
       scrollChat();
       return updatedMessages;
@@ -91,6 +108,66 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
+
+  const getAllIssues = async () => {
+    const input = prompt(
+      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues.",
+    );
+    const [owner, repo] = input.split("/");
+    try {
+      const response = await octokit.request(
+        "GET /repos/{owner}/{repo}/issues",
+        {
+          owner: owner,
+          repo: repo,
+        },
+      );
+      if (response.status === 200) {
+        const res = response.data;
+        const issues = res.map((issue) => {
+          return {
+            owner: owner,
+            repo: repo,
+            title: issue.title,
+            number: issue.number,
+          };
+        });
+        setIssues(issues);
+        setShowIssueModal(true);
+      } else {
+        alert("Error fetching issues!");
+        setIssues([]);
+      }
+    } catch (error) {
+      alert(
+        "Error fetching issues! Make sure that the repository is valid and you have access to it.",
+      );
+      setIssues([]);
+    }
+  };
+
+  const getIssue = async (owner, repo, issueNumber) => {
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/issues/{issue_number}",
+      {
+        owner: owner,
+        repo: repo,
+        issue_number: issueNumber,
+      },
+    );
+    if (response.status === 200) {
+      const res = response.data;
+      const title = res.title;
+      const body = res.body;
+      const messageObject = createMessage(
+        "user",
+        "GitHub issue: " + title + "\n\n---\n\n" + body,
+      );
+      sendMessage([messageObject]);
+    } else {
+      alert("Error fetching issue! Please try again later.");
+    }
+  };
 
   const handleSendMessage = () => {
     const newMessages = [];
@@ -108,7 +185,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         "user",
         fileContent,
         "file",
-        fileObjectData
+        fileObjectData,
       );
       newMessages.push(fileObject);
       setFile();
@@ -197,14 +274,12 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   const scrollChat = () => {
     setTimeout(() => {
-      const chatContainer = document.querySelector(
-        ".chatbox"
-      );
+      const chatContainer = document.querySelector(".chatbox");
       if (chatContainer) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
-      }, 0);
-  }
+    }, 0);
+  };
 
   return (
     <>
@@ -213,11 +288,15 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
           <ContentMessage message={message} key={index} />
         ))}
         {isThinking && (
-        <div className="flex mx-2">
-          <Bot color="black" size={36} />
-          <LoaderCircle className="animate-spin mx-4" color="black" size={36} />
-        </div>)
-        }
+          <div className="flex mx-2">
+            <Bot color="black" size={36} />
+            <LoaderCircle
+              className="animate-spin mx-4"
+              color="black"
+              size={36}
+            />
+          </div>
+        )}
       </div>
       <div
         className="flex flex-row justify-around h-1/4 mb-2"
@@ -226,6 +305,14 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       >
         <div className="w-full flex flex-col px-6">
           <div className="flex items-center space-x-1">
+            <div
+              className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center"
+              onClick={() => {
+                getAllIssues();
+              }}
+            >
+              <Github />
+            </div>
             <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
               <input
                 type="file"
@@ -250,20 +337,20 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
           </div>
           <div className="flex w-full space-x-4 h-2/3">
             <textarea
-            className="w-full resize-none p-4 bg-secondary text-primary rounded-2xl"
-            placeholder="Type your message here..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeypress}
-          ></textarea>
-          <button
-          className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
-          onClick={handleSendMessage}
-          >
-            Send
-          </button>
+              className="w-full resize-none p-4 bg-secondary text-primary rounded-2xl"
+              placeholder="Type your message here..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeypress}
+            ></textarea>
+            <button
+              className="bg-accent text-primary py-2 px-6 rounded-xl h-12 my-auto cursor-pointer"
+              onClick={handleSendMessage}
+            >
+              Send
+            </button>
           </div>
-          
+
           <select
             className="rounded-xl py-2 w-32"
             value={model}
@@ -276,7 +363,33 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
             ))}
           </select>
         </div>
-        
+        {showIssueModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+            <div className="bg-secondary rounded-xl shadow-lg w-4/5 max-w-md max-h-[80vh] overflow-y-auto p-4 space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold">Select an Issue</h2>
+                <button
+                  className="text-lg text-red-500 cursor-pointer"
+                  onClick={() => setShowIssueModal(false)}
+                >
+                  X
+                </button>
+              </div>
+              {issues.map((issue, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 bg-primary border rounded hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    getIssue(issue.owner, issue.repo, issue.number);
+                    setShowIssueModal(false);
+                  }}
+                >
+                  #{issue.number} - {issue.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
