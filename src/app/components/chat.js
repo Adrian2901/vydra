@@ -1,8 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bot, Github, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
+import { Octokit } from "octokit";
 
 /**
  * Creates a message object with the specified role, content, and type.
@@ -23,6 +24,10 @@ const createMessage = (role, content, type = "text", file = null) => ({
 
 // Receive chat id as a prop
 const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_TOKEN,
+  });
+  
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const availableModels = [
@@ -36,6 +41,8 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   ];
   const [model, setModel] = useState("llama3.2");
   const [file, setFile] = useState();
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issues, setIssues] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
 
@@ -148,7 +155,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
     if (!response.ok) {
       alert(
-        "Error: Could not fetch response from the LLM, please try again later!"
+        "Error: Could not fetch response from the LLM, please try again later!",
       );
       console.log(response.statusText);
       return;
@@ -182,6 +189,66 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     }
   };
 
+  const getAllIssues = async () => {
+    const input = prompt(
+      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues.",
+    );
+    const [owner, repo] = input.split("/");
+    try {
+      const response = await octokit.request(
+        "GET /repos/{owner}/{repo}/issues",
+        {
+          owner: owner,
+          repo: repo,
+        },
+      );
+      if (response.status === 200) {
+        const res = response.data;
+        const issues = res.map((issue) => {
+          return {
+            owner: owner,
+            repo: repo,
+            title: issue.title,
+            number: issue.number,
+          };
+        });
+        setIssues(issues);
+        setShowIssueModal(true);
+      } else {
+        alert("Error fetching issues!");
+        setIssues([]);
+      }
+    } catch (error) {
+      alert(
+        "Error fetching issues! Make sure that the repository is valid and you have access to it.",
+      );
+      setIssues([]);
+    }
+  };
+
+  const getIssue = async (owner, repo, issueNumber) => {
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/issues/{issue_number}",
+      {
+        owner: owner,
+        repo: repo,
+        issue_number: issueNumber,
+      },
+    );
+    if (response.status === 200) {
+      const res = response.data;
+      const title = res.title;
+      const body = res.body;
+      const messageObject = createMessage(
+        "user",
+        "GitHub issue: " + title + "\n\n---\n\n" + body,
+      );
+      sendMessage([messageObject]);
+    } else {
+      alert("Error fetching issue! Please try again later.");
+    }
+  };
+
   const handleSendMessage = async () => {
     const newMessages = [];
 
@@ -197,7 +264,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         "user",
         fileContent,
         "file",
-        fileObjectData
+        fileObjectData,
       );
       // Append the file message
       newMessages.push(fileObject);
@@ -330,6 +397,14 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       >
         <div className="w-full flex flex-col px-6">
           <div className="flex items-center space-x-1">
+            <div
+              className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center"
+              onClick={() => {
+                getAllIssues();
+              }}
+            >
+              <Github />
+            </div>
             <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
               <input
                 type="file"
@@ -380,6 +455,33 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
             ))}
           </select>
         </div>
+        {showIssueModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+            <div className="bg-secondary rounded-xl shadow-lg w-4/5 max-w-md max-h-[80vh] overflow-y-auto p-4 space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold">Select an Issue</h2>
+                <button
+                  className="text-lg text-red-500 cursor-pointer"
+                  onClick={() => setShowIssueModal(false)}
+                >
+                  X
+                </button>
+              </div>
+              {issues.map((issue, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 bg-primary border rounded hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    getIssue(issue.owner, issue.repo, issue.number);
+                    setShowIssueModal(false);
+                  }}
+                >
+                  #{issue.number} - {issue.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
