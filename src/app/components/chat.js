@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import { Bot, CirclePlus, LoaderCircle } from "lucide-react";
+import { Bot, Github, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
+import { Octokit } from "octokit";
 
 /**
  * Creates a message object with the specified role, content, and type.
@@ -20,6 +21,11 @@ const createMessage = (role, content, type = "text", file = null) => ({
   type, // text or file to display in the ui
   file,
 });
+
+const octokit = new Octokit({
+  auth: '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' //INSERT AUTH KEY HERE
+  // auth: process.env.GITHUB_TOKEN,
+})
 
 const Chat = () => {
   const system_message = createMessage(
@@ -91,6 +97,24 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
+
+  const fetchGithubIssue = async (issueNumber) => {
+    const response = await octokit.request("GET /repos/{owner}/{repo}/issues/{issue_number}", {
+      owner: "docusealco",
+      repo: "docuseal",
+      issue_number: issueNumber,
+    });
+    if (response.status === 200) {
+      const res = response.data;
+      const title = res.title;
+      const body = res.body;
+      const messageObject = createMessage("user", "GitHub issue: " + title + "\n\n---\n\n" + body);
+      sendMessage([messageObject]);
+    }
+    else {
+      console.error(`Error fetching issue: ${response.statusText}`);
+    }
+  };
 
   const handleSendMessage = () => {
     const newMessages = [];
@@ -226,6 +250,12 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       >
         <div className="w-full flex flex-col px-6">
           <div className="flex items-center space-x-1">
+            <div className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center" 
+            onClick={() => {
+            fetchGithubIssue(464);
+        }}>
+              <Github/>
+            </div>
             <label className="bg-accent text-primary text-xl rounded-xl my-2 h-12 w-12 cursor-pointer flex items-center justify-center">
               <input
                 type="file"
