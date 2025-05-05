@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bot, Github, CirclePlus, LoaderCircle } from "lucide-react";
 import FileMessage from "./file-message";
 import ContentMessage from "./content-message";
@@ -22,37 +22,14 @@ const createMessage = (role, content, type = "text", file = null) => ({
   file,
 });
 
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
-});
+// Receive chat id as a prop
+const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_TOKEN,
+  });
 
-const Chat = () => {
-  const system_message = createMessage(
-    "system",
-    `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. Check if the following parts exist in the bug report:
-    - Steps to Reproduce: how the bug was found and the actions needed to recreate that process,
-    - Stack Traces: report of the stack frames at the time of the bug,
-    - Test Cases: methods to test the component where the bug is occuring,
-    - Observed Behavior: what the user sees when the bug is happening (in text or images),
-    - Expected Behavior: what the application should be doing
-
-If they do not exist, tell the user they need to provide them. Check if the grammar and formatting of the text is correct.
-If it is not correct, tell the user to fix it and how to fix it.
-Do not summarize the bug report and do not offer solutions to fixing the bug.
-    `,
-  );
-
-  const message1 = createMessage(
-    "assistant",
-    "Hello! How can I help you today? ^^",
-  );
-
-  const [messages, setMessages] = useState([system_message, message1]);
+  const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
-  const [file, setFile] = useState();
-  const [model, setModel] = useState("llama3.2");
-  const [issues, setIssues] = useState([]);
-  const [showIssueModal, setShowIssueModal] = useState(false);
   const availableModels = [
     "llama3.2",
     "llama3.2:1b",
@@ -62,11 +39,94 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     "mistral-large",
     "phi4-mini",
   ];
+  const [model, setModel] = useState("llama3.2");
+  const [file, setFile] = useState();
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issues, setIssues] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [fileContent, setFileContent] = useState("");
+
+  useEffect(() => {
+    setCurrentChatId(chatId);
+    // Check if the chatId provided is stored in the sorted set in Redis
+    fetch(`/api/chatIds`)
+      .then((response) => response.json())
+      .then((data) => {
+        const chatIds = data || [];
+        // Check if chatId is in the list of chat IDs
+        if (chatIds.includes(chatId)) {
+          // Chat ID exists, fetch messages
+          fetch(`/api/chats?chatId=${chatId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              setMessages(data.messages || []);
+            })
+            .catch((error) => {
+              console.error("Error fetching chats:", error);
+              setMessages([]); // Fallback to empty array if there's an error
+            });
+        } else {
+          // New chat
+          // Establish the system prompt
+          const system_message = createMessage(
+            "system",
+            `Your role is a senior software engineer, you are very good at analyzing and writing bug reports. Check if the following parts exist in the bug report:
+    - Steps to Reproduce: how the bug was found and the actions needed to recreate that process,
+    - Stack Traces: report of the stack frames at the time of the bug,
+    - Test Cases: methods to test the component where the bug is occuring,
+    - Observed Behavior: what the user sees when the bug is happening (in text or images),
+    - Expected Behavior: what the application should be doing
+
+If they do not exist, tell the user they need to provide them. Check if the grammar and formatting of the text is correct.
+If it is not correct, tell the user to fix it and how to fix it.
+Do not summarize the bug report and do not offer solutions to fixing the bug.
+    `
+          );
+
+          // Establish the first message
+          const message1 = createMessage(
+            "assistant",
+            "Hello! How can I help you today? ^^"
+          );
+
+          // Add messages to the array
+          setMessages([system_message, message1]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chat IDs:", error);
+      });
+  }, [chatId, refreshChatIds, setCurrentChatId]);
+
   const sendMessage = async (newMessageObjects) => {
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
     scrollChat();
+
+    // If it's the first chat, create a new chatId
+    let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
+    let shouldRefresh = false;
+    if (chatId === "null") {
+      shouldRefresh = true;
+      // If it's the first chat, set the chatId to the new one
+      setCurrentChatId(thisChatId);
+      // Save the new chatId to the database
+      await fetch("/api/chatIds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: thisChatId }),
+      });
+
+      // Save the old messages to the database
+      newMessages.forEach(async (message) => {
+        await fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId: thisChatId, message }),
+        });
+      });
+    }
 
     // Enable the loading spinner
     setIsThinking(true);
@@ -80,20 +140,33 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       },
     };
 
-    const response = await fetch("http://localhost:11434/api/chat", {
+    // Send the request to the LLM API
+    const response = await fetch("/api/llm", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
 
     if (!response.ok) {
       alert(
-        "Error: Could not fetch response from the LLM, please try again later!",
+        "Error: Could not fetch response from the LLM, please try again later!"
       );
-      console.log(response.statusText);
       return;
     }
 
     const data = await response.json();
+
+    const message = createMessage("assistant", data.message.content);
+    // Save the new message to the database
+    const response2 = await fetch("/api/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId: thisChatId, message }),
+    });
+
+    if (!response2.ok) {
+      throw new Error("Failed to save message to the database");
+    }
 
     setMessages((prevMessages) => {
       const updatedMessages = [
@@ -104,14 +177,14 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       return updatedMessages;
     });
     setIsThinking(false);
+    if (shouldRefresh) {
+      refreshChatIds(thisChatId);
+    }
   };
-
-  const [inputValue, setInputValue] = useState("");
-  const [fileContent, setFileContent] = useState("");
 
   const getAllIssues = async () => {
     const input = prompt(
-      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues.",
+      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues."
     );
     const [owner, repo] = input.split("/");
     try {
@@ -120,7 +193,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         {
           owner: owner,
           repo: repo,
-        },
+        }
       );
       if (response.status === 200) {
         const res = response.data;
@@ -140,7 +213,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       }
     } catch (error) {
       alert(
-        "Error fetching issues! Make sure that the repository is valid and you have access to it.",
+        "Error fetching issues! Make sure that the repository is valid and you have access to it."
       );
       setIssues([]);
     }
@@ -153,7 +226,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         owner: owner,
         repo: repo,
         issue_number: issueNumber,
-      },
+      }
     );
     if (response.status === 200) {
       const res = response.data;
@@ -161,7 +234,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       const body = res.body;
       const messageObject = createMessage(
         "user",
-        "GitHub issue: " + title + "\n\n---\n\n" + body,
+        "GitHub issue: " + title + "\n\n---\n\n" + body
       );
       sendMessage([messageObject]);
     } else {
@@ -169,12 +242,11 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const newMessages = [];
 
     // Append the file if there is one
     if (fileContent.trim() !== "") {
-      // These naming conventions are so bad
       const fileObjectData = {
         name: file.name,
         size: file.size,
@@ -185,8 +257,9 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         "user",
         fileContent,
         "file",
-        fileObjectData,
+        fileObjectData
       );
+      // Append the file message
       newMessages.push(fileObject);
       setFile();
       setFileContent("");
@@ -200,7 +273,17 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     }
 
     if (newMessages.length > 0) {
-      sendMessage(newMessages);
+      const messagesPromise = newMessages.map((message) =>
+        fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId: chatId, message }),
+        })
+      );
+
+      // Wait for all messages to be saved
+      await Promise.all(messagesPromise);
+      await sendMessage(newMessages);
     }
   };
 
@@ -283,6 +366,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   return (
     <>
+      {/* <div>DEBUG: {chatId}</div> */}
       <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[64vh] [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-secondary [&::-webkit-scrollbar-thumb]:rounded-full chatbox">
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />

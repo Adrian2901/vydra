@@ -85,6 +85,16 @@
 - having attachments from the beginning lead to a longer solving time
 - i didn't really understand all the statistics of this :(
 
+## Run with Docker
+To run the app with Docker, you can use the following command:
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:8000 in your browser
+
+## Learn More
 ## *“Not My Bug!” and Other Reasons for Software Bug Report Reassignments* (Guo et al.)
 - https://dl.acm.org/doi/abs/10.1145/1958824.1958887
 
