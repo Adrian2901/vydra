@@ -43,9 +43,11 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
       console.log("Chat ID deleted from chatIds:", data);
 
       if (currentChatId === thisChatId) {
+        console.log("Current chat ID deleted, setting to null");
         refreshChatIds(null);
       }
-      refreshChatIds(thisChatId);
+      console.log("Refreshing chat IDs...");
+      refreshChatIds(currentChatId);
     } catch (error) {
       console.error("Error deleting chat:", error);
     }
@@ -90,7 +92,10 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
         </div>
         <button
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-accent transition duration-300 ease-in-out hover:cursor-pointer hover:bg-accent rounded-sm hover:text-primary"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+          }}
         >
           <Ellipsis />
         </button>

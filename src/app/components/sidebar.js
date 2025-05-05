@@ -26,11 +26,6 @@ const Sidebar = forwardRef(({ currentChatId, setCurrentChatId }, ref) => {
     return data || []; // Return an empty array if no data is found
   };
 
-  const handleNewChat = () => {
-    // Reset currentChatId to null when creating a new chat
-    setCurrentChatId(new Date().getTime());
-  };
-
   // Fetch chat IDs on component mount
   useEffect(() => {
     getChatIds().then((ids) => {
