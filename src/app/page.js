@@ -20,7 +20,11 @@ export default function Home() {
       <header className="h-4"></header>
 
       <main className="text-center flex-grow flex">
-        <Sidebar ref={sidebarRef} setCurrentChatId={setCurrentChatId} />
+        <Sidebar
+          currentChatId={currentChatId}
+          ref={sidebarRef}
+          setCurrentChatId={setCurrentChatId}
+        />
         <div className="w-4/5 bg-primary rounded-l-2xl py-4 flex flex-col justify-between">
           <Chat
             chatId={currentChatId}

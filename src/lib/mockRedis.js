@@ -67,9 +67,6 @@ const mockRedis = {
   },
 
   async lrange(key, start, end) {
-    console.log("All keys in mock database:", Object.keys(mockDatabase));
-    // Print all the messges in the current key
-    console.log("Messages in key:", key, mockDatabase[key]);
     // start and end are not used in the mock
     return mockDatabase[key] || [];
   },

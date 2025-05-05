@@ -2,7 +2,7 @@ import { MessageSquarePlus } from "lucide-react";
 import ChatButton from "./chat-button";
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 
-const Sidebar = forwardRef(({ setCurrentChatId }, ref) => {
+const Sidebar = forwardRef(({ currentChatId, setCurrentChatId }, ref) => {
   // Hook to fetch chat IDs from Redis
   const [chatIds, setChatIds] = useState([]);
 
@@ -57,9 +57,11 @@ const Sidebar = forwardRef(({ setCurrentChatId }, ref) => {
         <div className="flex flex-col justify-center items-center space-y-2">
           {chatIds.map((id) => (
             <ChatButton
+              currentChatId={currentChatId}
               key={id}
               chatId={id}
               onClick={() => setCurrentChatId(id)} // Update currentChatId on click
+              refreshChatIds={refreshChatIds}
             />
           ))}
         </div>

@@ -42,9 +42,15 @@ export async function POST(req) {
 export async function DELETE(req) {
   try {
     const { chatId } = await req.json();
+    console.log("Chat ID:", chatId);
     // Remove the chat ID from Redis
-    await redis.del(`chat:${chatId}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    const res = await redis.del(`chat:${chatId}`);
+    if (res === 1) {
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ error: "Chat not found" }), {
+      status: 404,
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

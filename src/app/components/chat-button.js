@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Ellipsis, Pencil, Trash2, Download } from "lucide-react";
 
-const ChatButton = ({ chatId, onClick }) => {
+const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const menuRef = useRef(null);
@@ -16,23 +16,39 @@ const ChatButton = ({ chatId, onClick }) => {
     // console.log("Export chat clicked");
   };
 
-  const handleDeleteChat = () => {
-    // console.log("Delete chat clicked");
-    fetch(`/api/chats`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ chatId }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Chat deleted:", data);
-        // Optionally, you can call a function to refresh the chat list here
-      })
-      .catch((error) => {
-        console.error("Error deleting chat:", error);
+  const handleDeleteChat = async () => {
+    try {
+      const thisChatId = chatId;
+      let response = await fetch(`/api/chats`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chatId }),
       });
+
+      let data = await response.json();
+      console.log("Chat deleted:", data);
+
+      // Delete the chat from the chatIds
+      response = await fetch("/api/chatIds", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chatId }),
+      });
+
+      data = await response.json();
+      console.log("Chat ID deleted from chatIds:", data);
+
+      if (currentChatId === thisChatId) {
+        refreshChatIds(null);
+      }
+      refreshChatIds(thisChatId);
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+    }
   };
 
   // Close menu when clicking outside

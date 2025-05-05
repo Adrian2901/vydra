@@ -10,7 +10,6 @@ if (useMockRedis) {
   redis = mockRedis;
 } else {
   // Initialize Redis client
-  console.log("Connecting to Redis...");
   redis = new Redis(process.env.REDIS_URL); // Use environment variables for configuration
   // TODO: Add error handling for Redis connection
 }

@@ -27,7 +27,7 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
   });
-  
+
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const availableModels = [
@@ -48,7 +48,6 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
 
   useEffect(() => {
     setCurrentChatId(chatId);
-    console.log("TRIGGERED useEffect with chatId:", chatId);
     // Check if the chatId provided is stored in the sorted set in Redis
     fetch(`/api/chatIds`)
       .then((response) => response.json())
@@ -56,12 +55,10 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
         const chatIds = data || [];
         // Check if chatId is in the list of chat IDs
         if (chatIds.includes(chatId)) {
-          console.log("FUCKING CHAT ID EXISTS:", chatId);
           // Chat ID exists, fetch messages
           fetch(`/api/chats?chatId=${chatId}`)
             .then((response) => response.json())
             .then((data) => {
-              console.log("FETCHED MESSAGES:", data);
               setMessages(data.messages || []);
             })
             .catch((error) => {
@@ -115,8 +112,6 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       // If it's the first chat, set the chatId to the new one
       setCurrentChatId(thisChatId);
       // Save the new chatId to the database
-      console.log("New chatId provided!");
-      console.log("ChatId:", thisChatId);
       await fetch("/api/chatIds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,7 +120,6 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
       // Save the old messages to the database
       newMessages.forEach(async (message) => {
-        console.log("Saving message:", message);
         await fetch("/api/chats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -155,9 +149,8 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
     if (!response.ok) {
       alert(
-        "Error: Could not fetch response from the LLM, please try again later!",
+        "Error: Could not fetch response from the LLM, please try again later!"
       );
-      console.log(response.statusText);
       return;
     }
 
@@ -191,7 +184,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   const getAllIssues = async () => {
     const input = prompt(
-      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues.",
+      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues."
     );
     const [owner, repo] = input.split("/");
     try {
@@ -200,7 +193,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         {
           owner: owner,
           repo: repo,
-        },
+        }
       );
       if (response.status === 200) {
         const res = response.data;
@@ -220,7 +213,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       }
     } catch (error) {
       alert(
-        "Error fetching issues! Make sure that the repository is valid and you have access to it.",
+        "Error fetching issues! Make sure that the repository is valid and you have access to it."
       );
       setIssues([]);
     }
@@ -233,7 +226,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         owner: owner,
         repo: repo,
         issue_number: issueNumber,
-      },
+      }
     );
     if (response.status === 200) {
       const res = response.data;
@@ -241,7 +234,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       const body = res.body;
       const messageObject = createMessage(
         "user",
-        "GitHub issue: " + title + "\n\n---\n\n" + body,
+        "GitHub issue: " + title + "\n\n---\n\n" + body
       );
       sendMessage([messageObject]);
     } else {
@@ -264,7 +257,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
         "user",
         fileContent,
         "file",
-        fileObjectData,
+        fileObjectData
       );
       // Append the file message
       newMessages.push(fileObject);
@@ -276,7 +269,6 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     if (inputValue.trim() !== "") {
       const messageObject = createMessage("user", inputValue);
       newMessages.push(messageObject);
-      console.log("Append user message:", JSON.stringify(messageObject));
       setInputValue("");
     }
 

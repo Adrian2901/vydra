@@ -26,3 +26,24 @@ export async function POST(req) {
     });
   }
 }
+
+export async function DELETE(req) {
+  try {
+    const { chatId } = await req.json();
+    console.log("Delete chat id from chatIds:", chatId);
+    // Remove the chat ID from the sorted set
+    const res = await redis.zrem("chatIds", chatId);
+    if (res === 0) {
+      return new Response(JSON.stringify({ error: "Chat ID not found" }), {
+        status: 404,
+      });
+    }
+    return new Response(JSON.stringify({ message: "Chat deleted" }), {
+      status: 200,
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
+  }
+}
