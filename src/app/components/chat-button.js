@@ -107,14 +107,14 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
           className="absolute top-full -right-35 mt-2 z-50 bg-accent text-primary rounded-md shadow-md p-2 w-48 flex flex-col gap-1"
         >
           <button
-            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2"
+            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2 cursor-not-allowed"
             onClick={handleRenameChat}
           >
             <Pencil className="inline mr-1" />
             Rename Chat
           </button>
           <button
-            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2"
+            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2 cursor-not-allowed"
             onClick={handleExportChat}
           >
             <Download className="inline mr-1" />
