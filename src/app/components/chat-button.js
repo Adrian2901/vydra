@@ -13,32 +13,34 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
   };
 
   const handleExportChat = async () => {
-      try {
-        const response = await fetch(`/api/chats?chatId=` + chatId, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          }
-        });
+    try {
+      const response = await fetch(`/api/chats?chatId=` + chatId, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch chat data");
-        }
-
-        const chatData = await response.json();
-        const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `chat_${chatId}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Error exporting chat:", error);
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat data");
       }
+
+      const chatData = await response.json();
+      const blob = new Blob([JSON.stringify(chatData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chat_${chatId}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting chat:", error);
+    }
   };
 
   const handleDeleteChat = async () => {

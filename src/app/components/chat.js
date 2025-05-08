@@ -45,7 +45,12 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   const [issues, setIssues] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
-  const introMessage = {role: "assistant", type: "text", content: "Hello!\n\nI'm Vydra, a chatbot assistant designed to help you write good quality bug reports! To start, you can attach an existing bug report from a file or a Github repository, or start creating a new one by writing it in the chatbox below! I'll do my best to assist ou during is process and include all necessary information:)"};
+  const introMessage = {
+    role: "assistant",
+    type: "text",
+    content:
+      "Hello!\n\nI'm Vydra, a chatbot assistant designed to help you write good quality bug reports! To start, you can attach an existing bug report from a file or a Github repository, or start creating a new one by writing it in the chatbox below! I'll do my best to assist you during this process :)",
+  };
 
   useEffect(() => {
     setCurrentChatId(chatId);
