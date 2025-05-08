@@ -12,8 +12,35 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
     // console.log("Rename chat clicked");
   };
 
-  const handleExportChat = () => {
-    // console.log("Export chat clicked");
+  const handleExportChat = async () => {
+    try {
+      const response = await fetch(`/api/chats?chatId=` + chatId, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat data");
+      }
+
+      const chatData = await response.json();
+      const blob = new Blob([JSON.stringify(chatData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chat_${chatId}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting chat:", error);
+    }
   };
 
   const handleDeleteChat = async () => {
@@ -114,7 +141,7 @@ const ChatButton = ({ currentChatId, chatId, onClick, refreshChatIds }) => {
             Rename Chat
           </button>
           <button
-            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2 cursor-not-allowed"
+            className="hover:bg-gray-100 rounded px-2 py-1 text-left flex items-center gap-x-2"
             onClick={handleExportChat}
           >
             <Download className="inline mr-1" />

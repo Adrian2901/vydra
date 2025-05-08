@@ -45,6 +45,12 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   const [issues, setIssues] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [fileContent, setFileContent] = useState("");
+  const introMessage = {
+    role: "assistant",
+    type: "text",
+    content:
+      "Hello!\n\nI'm Vydra, a chatbot assistant designed to help you write good quality bug reports! To start, you can attach an existing bug report from a file or a Github repository, or start creating a new one by writing it in the chatbox below! I'll do my best to assist you during this process :)",
+  };
 
   useEffect(() => {
     setCurrentChatId(chatId);
@@ -83,14 +89,8 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     `
           );
 
-          // Establish the first message
-          const message1 = createMessage(
-            "assistant",
-            "Hello! How can I help you today? ^^"
-          );
-
           // Add messages to the array
-          setMessages([system_message, message1]);
+          setMessages([system_message]);
         }
       })
       .catch((error) => {
@@ -368,6 +368,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     <>
       {/* <div>DEBUG: {chatId}</div> */}
       <div className="flex-col w-full space-y-8 overflow-y-auto max-h-[64vh] [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-secondary [&::-webkit-scrollbar-thumb]:rounded-full chatbox">
+        <ContentMessage message={introMessage} />
         {messages.map((message, index) => (
           <ContentMessage message={message} key={index} />
         ))}
