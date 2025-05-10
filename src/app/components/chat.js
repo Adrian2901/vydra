@@ -72,9 +72,7 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
               setMessages([]); // Fallback to empty array if there's an error
             });
         } else {
-          console.log(
-            '"Chat ID not found in the list, creating a new chat...");'
-          );
+          console.log("Chat ID not found in the list, creating a new chat...");
           // New chat
           // Establish the system prompt
           const system_message = createMessage(
