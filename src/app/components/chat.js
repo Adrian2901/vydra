@@ -72,6 +72,9 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
               setMessages([]); // Fallback to empty array if there's an error
             });
         } else {
+          console.log(
+            '"Chat ID not found in the list, creating a new chat...");'
+          );
           // New chat
           // Establish the system prompt
           const system_message = createMessage(
@@ -102,10 +105,15 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     // Append the new messages object to the existing messages
     const newMessages = [...messages, ...newMessageObjects];
     setMessages(newMessages);
+    console.log("New messages:", newMessages);
     scrollChat();
 
     // If it's the first chat, create a new chatId
+    if (chatId === "null") {
+      console.log("Chat ID is null, creating a new one...");
+    }
     let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
+    console.log("Chat ID:", thisChatId);
     let shouldRefresh = false;
     if (chatId === "null") {
       shouldRefresh = true;
@@ -272,19 +280,20 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       setInputValue("");
     }
 
-    if (newMessages.length > 0) {
-      const messagesPromise = newMessages.map((message) =>
-        fetch("/api/chats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId: chatId, message }),
-        })
-      );
+    await sendMessage(newMessages);
+    // if (newMessages.length > 0) {
+    //   console.log("New messages:", newMessages);
+    //   const messagesPromise = newMessages.map((message) =>
+    //     fetch("/api/chats", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({ chatId: chatId, message }),
+    //     })
+    //   );
 
-      // Wait for all messages to be saved
-      await Promise.all(messagesPromise);
-      await sendMessage(newMessages);
-    }
+    //   // Wait for all messages to be saved
+    //   await Promise.all(messagesPromise);
+    // }
   };
 
   const handleKeypress = (e) => {
