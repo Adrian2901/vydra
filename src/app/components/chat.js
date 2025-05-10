@@ -101,6 +101,95 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       });
   }, [chatId, refreshChatIds, setCurrentChatId]);
 
+  const sendMessage = async (newMessageObjects) => {
+    // Append the new messages object to the existing messages
+    const newMessages = [...messages, ...newMessageObjects];
+    setMessages(newMessages);
+    console.log("New messages:", newMessages);
+    scrollChat();
+
+    // If it's the first chat, create a new chatId
+    if (chatId === "null") {
+      console.log("Chat ID is null, creating a new one...");
+    }
+    let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
+    console.log("Chat ID:", thisChatId);
+    let shouldRefresh = false;
+    if (chatId === "null") {
+      shouldRefresh = true;
+      // If it's the first chat, set the chatId to the new one
+      setCurrentChatId(thisChatId);
+      // Save the new chatId to the database
+      await fetch("/api/chatIds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: thisChatId }),
+      });
+
+      // Save the old messages to the database
+      newMessages.forEach(async (message) => {
+        await fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId: thisChatId, message }),
+        });
+      });
+    }
+
+    // Enable the loading spinner
+    setIsThinking(true);
+
+    const request = {
+      model: model,
+      messages: newMessages.map(({ role, content }) => ({ role, content })),
+      stream: false,
+      options: {
+        temperature: 0.2, // Lower temperature for more focused responses
+      },
+    };
+
+    // Send the request to the LLM API
+    const response = await fetch("/api/llm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      alert(
+        "Error: Could not fetch response from the LLM, please try again later!"
+      );
+      return;
+    }
+
+    const data = await response.json();
+
+    const message = createMessage("assistant", data.message.content);
+    // Save the new message to the database
+    const response2 = await fetch("/api/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId: thisChatId, message }),
+    });
+
+    if (!response2.ok) {
+      throw new Error("Failed to save message to the database");
+    }
+
+    setMessages((prevMessages) => {
+      const updatedMessages = [
+        ...prevMessages,
+        createMessage("assistant", data.message.content),
+      ];
+      scrollChat();
+      return updatedMessages;
+    });
+    setIsThinking(false);
+    if (shouldRefresh) {
+      refreshChatIds(thisChatId);
+    }
+  };
+
   const getAllIssues = async () => {
     const input = prompt(
       "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues."
