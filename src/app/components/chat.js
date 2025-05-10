@@ -109,11 +109,11 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     scrollChat();
 
     // If it's the first chat, create a new chatId
-    if (chatId === "null") {
-      console.log("Chat ID is null, creating a new one...");
-    }
+    // if (chatId === "null") {
+    //   console.log("Chat ID is null, creating a new one...");
+    // }
     let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
-    console.log("Chat ID:", thisChatId);
+    // console.log("Chat ID:", thisChatId);
     let shouldRefresh = false;
     if (chatId === "null") {
       shouldRefresh = true;
@@ -287,7 +287,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     // If it's the first chat, create a new chatId
     let shouldRefresh = false;
     if (chatId === "null") {
-      console.log("Chat ID is null, creating a new one...");
+      // console.log("Chat ID is null, creating a new one...");
       chatId = String(new Date().getTime());
       shouldRefresh = true;
       setCurrentChatId(chatId);
@@ -300,7 +300,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
       // If it's the first chat, save the system prompt as well
       messages.forEach(async (message) => {
-        console.log("Saving message:", message);
+        // console.log("Saving message:", message);
         await fetch("/api/chats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
