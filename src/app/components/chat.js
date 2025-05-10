@@ -33,13 +33,9 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
   const availableModels = [
     "llama3.2",
     "llama3.2:1b",
-    "llama3.1",
-    "qwen2.5:72b",
-    "qwen2.5:14b",
-    "mistral-large",
-    "phi4-mini",
+    "llama3.1:8b",
   ];
-  const [model, setModel] = useState("llama3.2");
+  const [model, setModel] = useState("llama3.1:8b");
   const [file, setFile] = useState();
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issues, setIssues] = useState([]);
