@@ -68,6 +68,7 @@ const Chat = ({ chatId, refreshChatIds, setCurrentChatId }) => {
               setMessages([]); // Fallback to empty array if there's an error
             });
         } else {
+          console.log("Chat ID not found in the list, creating a new chat...");
           // New chat
           // Establish the system prompt
           const system_message = createMessage(
@@ -94,42 +95,56 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       });
   }, [chatId, refreshChatIds, setCurrentChatId]);
 
-  const sendMessage = async (newMessageObjects) => {
+  const sendMessage = async (newMessages) => {
     // Append the new messages object to the existing messages
-    const newMessages = [...messages, ...newMessageObjects];
-    setMessages(newMessages);
+    const allMessages = [...messages, ...newMessages];
+    setMessages(allMessages);
     scrollChat();
 
     // If it's the first chat, create a new chatId
-    let thisChatId = chatId === "null" ? String(new Date().getTime()) : chatId;
     let shouldRefresh = false;
     if (chatId === "null") {
+      // console.log("Chat ID is null, creating a new one...");
+      chatId = String(new Date().getTime());
       shouldRefresh = true;
-      // If it's the first chat, set the chatId to the new one
-      setCurrentChatId(thisChatId);
+      setCurrentChatId(chatId);
+
       // Save the new chatId to the database
       await fetch("/api/chatIds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatId: thisChatId }),
+        body: JSON.stringify({ chatId: chatId }),
       });
 
-      // Save the old messages to the database
-      newMessages.forEach(async (message) => {
+      // If it's the first chat, save the system prompt as well
+      await Promise.all(
+        messages.map(async (message) => {
+          fetch("/api/chats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chatId: chatId, message }),
+          });
+        })
+      );
+    }
+
+    // Save the new messages to the database
+    await Promise.all(
+      newMessages.map(async (message) => {
         await fetch("/api/chats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId: thisChatId, message }),
+          body: JSON.stringify({ chatId: chatId, message }),
         });
-      });
-    }
+      })
+    );
 
     // Enable the loading spinner
     setIsThinking(true);
 
     const request = {
       model: model,
-      messages: newMessages.map(({ role, content }) => ({ role, content })),
+      messages: allMessages.map(({ role, content }) => ({ role, content })),
       stream: false,
       options: {
         temperature: 0.2, // Lower temperature for more focused responses
@@ -157,24 +172,21 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
     const response2 = await fetch("/api/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chatId: thisChatId, message }),
+      body: JSON.stringify({ chatId: chatId, message }),
     });
 
     if (!response2.ok) {
       throw new Error("Failed to save message to the database");
     }
 
-    setMessages((prevMessages) => {
-      const updatedMessages = [
-        ...prevMessages,
-        createMessage("assistant", data.message.content),
-      ];
-      scrollChat();
-      return updatedMessages;
-    });
+    // Append the LLM response to the messages
+    const updatedMessages = [...allMessages, message];
+    setMessages(updatedMessages);
+    scrollChat();
+
     setIsThinking(false);
     if (shouldRefresh) {
-      refreshChatIds(thisChatId);
+      refreshChatIds(chatId);
     }
   };
 
@@ -268,19 +280,7 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
       setInputValue("");
     }
 
-    if (newMessages.length > 0) {
-      const messagesPromise = newMessages.map((message) =>
-        fetch("/api/chats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId: chatId, message }),
-        })
-      );
-
-      // Wait for all messages to be saved
-      await Promise.all(messagesPromise);
-      await sendMessage(newMessages);
-    }
+    await sendMessage(newMessages);
   };
 
   const handleKeypress = (e) => {
