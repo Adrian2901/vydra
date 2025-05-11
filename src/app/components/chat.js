@@ -192,8 +192,11 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
 
   const getAllIssues = async () => {
     const input = prompt(
-      "Please provide the owner and repository name in the format 'owner/repo' to fetch all issues."
+      "Please provide the owner and repository name in the 'owner/repo' format to fetch all issues."
     );
+    if (!input || input.trim() === "") {
+      return;
+    }
     const [owner, repo] = input.split("/");
     try {
       const response = await octokit.request(
@@ -284,10 +287,11 @@ Do not summarize the bug report and do not offer solutions to fixing the bug.
   };
 
   const handleKeypress = (e) => {
-    if (e.code === "Enter") {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    // Commented out to disable "send on enter" functionality
+    // if (e.code === "Enter") {
+    //   e.preventDefault();
+    //   handleSendMessage();
+    // }
   };
 
   const handleFileUpload = (e) => {
